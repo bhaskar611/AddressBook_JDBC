@@ -20,6 +20,7 @@ public class Testing_AddressBook
         public void  givenAddressBookData_WhenReturned_ShouldMatchEntryCount()
         {
         	List<AddressBookData> addressBookList = addressBook.readData();
+        	System.out.println(addressBookList);
         	Assert.assertEquals(3,addressBookList.size());
         }
 }

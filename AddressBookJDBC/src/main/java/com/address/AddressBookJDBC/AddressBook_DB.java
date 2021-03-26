@@ -1,57 +1,55 @@
 package com.address.AddressBookJDBC;
 
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-
+import com.mysql.cj.jdbc.Driver;
 
 
 public class AddressBook_DB {
-	private static void listDrivers() {
-		Enumeration<Driver> driverList = DriverManager.getDrivers();
-		while (driverList.hasMoreElements()) {
-			Driver driverClass = driverList.nextElement();
-			System.out.println("	" + driverClass.getClass().getName());
-		}
+
+	 private AddressBook_DataBaseService addressBookService;
+	List<AddressBookData> addressBookList = new ArrayList<>();
+	
+	public AddressBook_DB() {
+		addressBookService = AddressBook_DataBaseService.getInstance();
 	}
-	public List<AddressBookData> readData()
-	{
-		String sql = "select * from addressBook;";
-		List<AddressBookData> addressBookList = new ArrayList<>();
-		try(Connection connection = this.getConnection();)
-		
-		{
-		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery(sql);
-		while(resultSet.next()) {
-			addressBookList.add(new AddressBookData(resultSet.getString("firstName"), resultSet.getString("lastName"),
-					resultSet.getString("address"),resultSet.getString("city"),resultSet.getString("state"),resultSet.getInt("zip"),
-					resultSet.getInt("phoneNumber"),resultSet.getString("email") ));
-		}
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-		}
-		return addressBookList;
-	}
-	private Connection getConnection() throws SQLException {
-		String jdbcURL = "jdbc:mysql://localhost:3306/address_book_service?useSSL=false";
-		String userName = "root";
-		Connection connection;
-		System.out.println("Connecting to database : "+jdbcURL);
-		connection = DriverManager.getConnection(jdbcURL, userName, "1@Github");
-		System.out.println("Connection is successful !! " + connection);
-		return connection;
+
+	public AddressBook_DB(List<AddressBookData> addressBookList) {
+		this();
+		this.addressBookList = addressBookList;
 	}
 	
+	public List<AddressBookData> readData() {
+		this.addressBookList = addressBookService.readData(); 
+		return  addressBookList;
+	}
 
-   	
+	public void updateAddressBookData(String firstName, String city)
+	{
+		int result = new AddressBook_DataBaseService().updateEmployeeSalaryResult(firstName, city);
+		if(result == 0) return;
+		AddressBookData AddressBookData = this.getAddressBookData(firstName);
+		if(AddressBookData != null) AddressBookData.setCity(city);
+	}
+	
+	private AddressBookData getAddressBookData(String firstName) {
+      AddressBookData addressBookData ;
+      addressBookData = this.addressBookList.stream()
+    		             .filter(addressBookEntry  ->  (addressBookEntry.getFirstName()).equals(firstName))
+    		             .findFirst()
+    		             .orElse(null);
+		return addressBookData;
+	}
+
+	public boolean checkAddressBookDataSyncWithDB(String firstName) {
+		try {
+			return addressBookService.getAddressBookData(firstName).get(0).getFirstName().equals(getAddressBookData(firstName).getFirstName());
+		} catch (IndexOutOfBoundsException e) {
+		}
+		return false;
+	}
 }
